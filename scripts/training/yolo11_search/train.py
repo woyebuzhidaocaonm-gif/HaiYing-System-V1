@@ -193,4 +193,3 @@ def run_all() -> None:
 if __name__ == "__main__":
     # In PyCharm, right-click this file and choose Run 'train_yolo'.
     run_all()
-
