@@ -20,6 +20,16 @@ __pycache__/
 *.pt
 *.onnx
 *.weights
+*.engine
+*.torchscript
+*.tflite
 *.bag
 data/
 datasets/
+
+# 视觉训练派生文件
+runs/
+weights/
+output/
+dataset_*/
+*.cache
