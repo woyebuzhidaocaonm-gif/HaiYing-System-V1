@@ -70,6 +70,8 @@ class YoloDetector(Node):
         self.declare_parameter('device', 'cuda')
         self.declare_parameter('image_topic', '/drone/camera/image_raw')
         self.declare_parameter('publish_annotated', False)
+        # V9.2 相机帧（检测消息 header.frame_id 与目标点链一致）
+        self.declare_parameter('camera_frame', 'ar0234_camera_optical_frame')
 
         self.bridge = CvBridge()
         self.frame_count = 0
@@ -191,13 +193,13 @@ class YoloDetector(Node):
     def _publish(self, det, header):
         msg = DefectDetectionArray()
         msg.header = header
-        msg.header.frame_id = 'camera_frame'
+        msg.header.frame_id = self.get_parameter('camera_frame').value
 
         if det is not None and len(det):
             for *xyxy, conf, cls in det.cpu().numpy():
                 d = DefectDetection()
                 d.header = header
-                d.header.frame_id = 'camera_frame'
+                d.header.frame_id = self.get_parameter('camera_frame').value
                 d.class_id = int(cls)
                 d.class_name = CLASS_NAMES[int(cls)] if int(cls) < 6 else 'unknown'
                 d.confidence = float(conf)

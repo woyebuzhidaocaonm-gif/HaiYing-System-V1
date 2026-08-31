@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 """
-Gazebo Harmonic → ROS2 相机桥接器
+Gazebo Harmonic → ROS2 相机桥接器（V9.2 帧名适配）
+=================================================
 直接用 gz-transport13 Python 绑定订阅 Gazebo 相机话题，
 转为 ROS2 sensor_msgs/Image 发布，避开 ros_gz_bridge 的库版本不兼容问题。
+
+注意：V9.2 正式链由 haiying_v9_2 模型的 gazebo_ros_camera 插件
+直接发布 /drone/camera/image_raw + camera_info（frame=ar0234_camera_optical_frame），
+**不启动本桥接器**。本脚本保留用于旧 gz-sensors 链路。
+
+V9.2 适配要点：
+  - 输出 frame_id = ar0234_camera_optical_frame（与 V9.2 相机帧一致）
+  - header.stamp 透传 Gazebo 仿真时间（不再用 now() 覆盖）
+  - CameraInfo 的 K 优先来自 gz /camera_info 话题（projection 矩阵），
+    话题缺失时按图像分辨率 + hfov 计算（默认值=AR0234 仿真相机：
+    1920x1080, hfov=1.3962634016），不再硬编码 320x240 的 277
 
 用法:
     source /opt/ros/humble/setup.bash
@@ -10,13 +22,18 @@ Gazebo Harmonic → ROS2 相机桥接器
     python3 gz_camera_bridge.py
 
 环境变量:
-    GZ_CAMERA_TOPIC: Gazebo相机话题名 (默认 /camera)
-    ROS_IMAGE_TOPIC:  ROS2输出话题名 (默认 /drone/camera/image_raw)
+    GZ_CAMERA_TOPIC:      Gazebo相机话题名 (默认 /camera)
+    GZ_CAMERA_INFO_TOPIC: Gazebo相机信息话题名 (默认 <GZ_CAMERA_TOPIC>_info)
+    GZ_CAMERA_HFOV:       Gazebo相机水平FOV(rad) (默认 1.3962634016, AR0234)
+    ROS_IMAGE_TOPIC:      ROS2输出话题名 (默认 /drone/camera/image_raw)
+    ROS_CAMINFO_TOPIC:    ROS2 CameraInfo话题名 (默认 /drone/camera/camera_info)
+    ROS_CAMERA_FRAME:     输出 frame_id (默认 ar0234_camera_optical_frame)
 """
 
 import os
 import sys
 import time
+import math
 
 # 必须在导入 gz.msgs 之前设置，否则 protobuf 版本冲突
 os.environ.setdefault('PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION', 'python')
@@ -69,8 +86,14 @@ class GzCameraBridge(Node):
         super().__init__('gz_camera_bridge')
 
         gz_topic = os.environ.get('GZ_CAMERA_TOPIC', '/camera')
+        gz_info_topic = os.environ.get(
+            'GZ_CAMERA_INFO_TOPIC', gz_topic + '_info')
         ros_topic = os.environ.get('ROS_IMAGE_TOPIC', '/drone/camera/image_raw')
         ros_caminfo_topic = os.environ.get('ROS_CAMINFO_TOPIC', '/drone/camera/camera_info')
+        self.ros_frame = os.environ.get(
+            'ROS_CAMERA_FRAME', 'ar0234_camera_optical_frame')
+        self.gz_hfov = float(
+            os.environ.get('GZ_CAMERA_HFOV', '1.3962634016'))
 
         self.get_logger().info(f'GZ topic: {gz_topic} → ROS2 topic: {ros_topic}')
 
@@ -84,10 +107,16 @@ class GzCameraBridge(Node):
         self.frame_count = 0
         self.start_time = time.time()
         self._format_warned = set()
+        self._k = None            # 来自 gz CameraInfo 的 K；None=按 hfov 计算
+        self._k_warned = False
+
+        # 订阅相机信息话题（K 的动态来源）
+        self._subscribe_gz_info(gz_info_topic)
 
         # 订阅相机话题
         self._subscribe_gz(gz_topic)
-        self.get_logger().info('Gazebo相机桥接器已启动，等待图像...')
+        self.get_logger().info(
+            f'Gazebo相机桥接器已启动 | frame={self.ros_frame}，等待图像...')
 
     def _gz_to_cv2(self, msg) -> np.ndarray:
         """将 Gazebo Image 转为 OpenCV BGR numpy 数组"""
@@ -154,6 +183,41 @@ class GzCameraBridge(Node):
                 return cv2.cvtColor(raw.reshape((height, width)), cv2.COLOR_GRAY2BGR)
             return None
 
+    def _gz_stamp_to_ros(self, msg):
+        """透传 Gazebo 仿真时间戳；时间戳为零时回退 ROS 时钟。"""
+        stamp = msg.header.stamp
+        if stamp.sec > 0 or stamp.nsec > 0:
+            return rclpy.time.Time(
+                seconds=stamp.sec, nanoseconds=stamp.nsec).to_msg()
+        return self.get_clock().now().to_msg()
+
+    def _k_from_hfov(self, width, height):
+        """按水平FOV与分辨率计算内参 K（gz CameraInfo 缺失时的回退）"""
+        fx = (width / 2.0) / math.tan(self.gz_hfov / 2.0)
+        return [fx, 0.0, width / 2.0,
+                0.0, fx, height / 2.0,
+                0.0, 0.0, 1.0]
+
+    def _subscribe_gz_info(self, topic: str):
+        """订阅 gz CameraInfo（projection 矩阵 → K）"""
+        def on_info(msg):
+            try:
+                p = msg.projection.p  # 4x4 row-major
+                fx, fy = p[0], p[5]
+                cx, cy = p[2], p[6]
+                if fx > 0 and fy > 0:
+                    self._k = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]
+            except Exception as e:
+                self.get_logger().warn(f'gz CameraInfo 解析失败: {e}')
+
+        try:
+            from gz.msgs10.camera_info_pb2 import CameraInfo as GzCameraInfo
+            self.gz_node.subscribe(GzCameraInfo, topic, on_info)
+            self.get_logger().info(f'已订阅 Gazebo 相机信息话题: {topic}')
+        except Exception as e:
+            self.get_logger().warn(
+                f'gz CameraInfo 订阅失败({topic})，K 将按 hfov 计算: {e}')
+
     def _subscribe_gz(self, topic: str):
         """订阅 Gazebo Transport 话题"""
 
@@ -167,16 +231,24 @@ class GzCameraBridge(Node):
                 # 转为 ROS2 Image 并发布
                 # 使用 passthrough 避开 cv_bridge 与 OpenCV 5.x 的 cvtype 编码表冲突
                 ros_img = self.bridge.cv2_to_imgmsg(np_img, encoding='passthrough')
-                ros_img.header.stamp = self.get_clock().now().to_msg()
-                ros_img.header.frame_id = 'camera_frame'
+                ros_img.header.stamp = self._gz_stamp_to_ros(msg)
+                ros_img.header.frame_id = self.ros_frame
                 self.image_pub.publish(ros_img)
 
-                # 发布 CameraInfo
+                # 发布 CameraInfo（K 优先 gz CameraInfo，回退 hfov 计算）
                 caminfo = CameraInfo()
                 caminfo.header = ros_img.header
                 caminfo.height = np_img.shape[0]
                 caminfo.width = np_img.shape[1]
-                caminfo.k = [277.0, 0.0, 160.0, 0.0, 277.0, 120.0, 0.0, 0.0, 1.0]
+                if self._k is None:
+                    self._k = self._k_from_hfov(
+                        caminfo.width, caminfo.height)
+                    if not self._k_warned:
+                        self._k_warned = True
+                        self.get_logger().warn(
+                            f'gz CameraInfo 未就绪，K 按 hfov={self.gz_hfov} '
+                            f'计算: fx={self._k[0]:.2f}')
+                caminfo.k = self._k
                 self.caminfo_pub.publish(caminfo)
 
                 self.frame_count += 1
