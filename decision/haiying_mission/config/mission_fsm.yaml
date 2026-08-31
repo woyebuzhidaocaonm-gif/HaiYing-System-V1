@@ -1,0 +1,51 @@
+/**:
+  ros__parameters:
+    # ===== 唯一任务状态机 正式配置（联合仿真）=====
+
+    # 主循环频率（Hz）；0 = 禁用内部定时器（仅单测用）
+    rate: 10.0
+
+    # ---- 3 秒目标看门狗（组长指令 + PM 冻结）----
+    # > target_timeout 秒未收到有效目标 → ERROR（持续零速悬停）
+    target_timeout: 3.0
+    # 短丢失判定窗口：超过即先悬停（BRUSHING→RETURNING，其余→SEARCHING），
+    # 满 target_timeout 仍无数据则看门狗升级 ERROR
+    target_loss_timeout: 1.0
+
+    # ---- 接近与作业 ----
+    approach_distance: 2.0     # 满速接近阈值(m)
+    brush_distance: 0.5        # 作业距离(m)
+    max_speed: 1.0             # 最大接近速度(m/s)
+    slow_factor: 0.5           # 近距减速系数
+
+    # ---- 位姿源 ----
+    pose_source: mavros        # mavros | gt
+    pose_topic: /mavros/local_position/pose
+    pose_gt_topic: /drone/pose_gt
+    pose_timeout: 1.0          # 位姿过期阈值(s)，超时悬停
+
+    # ---- 坐标系 ----
+    world_frame: world
+    arm_frame: base_footprint
+
+    # ---- 机械臂指令与反馈 ----
+    arm_publish_period: 2.0    # /arm/target_pose 下发周期(s)
+    arm_exec_enable: false     # 预留参数：机械臂反馈订阅（本次不实现）
+    arm_exec_topic: /arm/execution_status
+    arm_exec_timeout: 30.0     # BRUSHING 兜底超时(s) → RETURNING
+
+    # ---- RETURNING ----
+    returning_timeout: 5.0     # RETURNING 保持时长(s) → SEARCHING（解除武装）
+
+    # ---- 防御 ----
+    max_target_pos: 50.0       # 目标单轴绝对值上限(m)，超限样本丢弃
+    tf_timeout: 0.2            # TF 查询超时(s)
+    tf_failure_policy: hold    # hold（TF 缺失悬停/不下发）| identity
+
+    # ---- 话题与服务（契约 V2.1，严禁改名）----
+    target_topic: /vision/target_point
+    state_topic: /system/current_state
+    cmd_vel_topic: /uav/cmd_vel
+    arm_topic: /arm/target_pose
+    reset_service: /fsm/reset
+    flight_fault_topic: /uav/flight_fault
