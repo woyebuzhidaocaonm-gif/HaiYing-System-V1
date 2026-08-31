@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    # ===== PM 冻结：V9.2 正式视觉链配置 =====
+    # 深度相机退出正式启动链（实物采用单线雷达低成本测距验证）
+    use_depth_camera: false
+    use_lidar: true
+
+    # V9.2 话题（由 haiying_v9_2 模型 Gazebo 插件直接发布）
+    camera_info_topic: /drone/camera/camera_info
+    lidar_topic: /drone/lidar/points
+    pose_topic: /mavros/local_position/pose
+
+    # V9.2 帧（PM 冻结）
+    world_frame: world
+    base_frame: base_footprint
+    camera_link_frame: ar0234_camera_link          # FLU: X前/Y左/Z上
+    camera_frame: ar0234_camera_optical_frame      # RDF: Z前/X右/Y下
+    lidar_frame: mid360_link
+
+    # 图像与点云最大时间差（PM 冻结 0.5s，超过拒绝本次定位）
+    max_time_diff: 0.5
+
+    # 复用 URDF 已有 TF，禁止重复发布外参（PM 冻结）
+    publish_lidar_tf: false
+
+    projection_radius: 15.0
+    tf_timeout: 0.2

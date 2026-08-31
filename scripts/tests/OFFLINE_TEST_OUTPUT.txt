@@ -1,0 +1,29 @@
+test_empty_region_returns_none (__main__.TestLidarDepth.test_empty_region_returns_none) ... ok
+test_nan_points_filtered (__main__.TestLidarDepth.test_nan_points_filtered) ... ok
+test_outlier_robustness (__main__.TestLidarDepth.test_outlier_robustness) ... ok
+test_wall_median_depth (__main__.TestLidarDepth.test_wall_median_depth) ... ok
+test_axis_mapping (__main__.TestLinkToOptical.test_axis_mapping) ... ok
+test_equivalent_to_v9_2_static_tf (__main__.TestLinkToOptical.test_equivalent_to_v9_2_static_tf) ... ok
+test_rotation_orthonormal (__main__.TestLinkToOptical.test_rotation_orthonormal) ... ok
+test_roundtrip (__main__.TestLinkToOptical.test_roundtrip) ... ok
+test_empty_cloud (__main__.TestPC2Parse.test_empty_cloud) ... ok
+test_gz_12_byte_layout (__main__.TestPC2Parse.test_gz_12_byte_layout) ... ok
+test_missing_fields_raises (__main__.TestPC2Parse.test_missing_fields_raises) ... ok
+test_scrambled_field_order (__main__.TestPC2Parse.test_scrambled_field_order) ... ok
+test_unaligned_slow_path (__main__.TestPC2Parse.test_unaligned_slow_path) ... ok
+test_unsupported_datatype_raises (__main__.TestPC2Parse.test_unsupported_datatype_raises) ... ok
+test_behind_or_degenerate_camera (__main__.TestProjection.test_behind_or_degenerate_camera) ... ok
+test_empty_input (__main__.TestProjection.test_empty_input) ... ok
+test_known_point (__main__.TestProjection.test_known_point) ... ok
+test_optical_axis_point (__main__.TestProjection.test_optical_axis_point) ... ok
+test_unproject_roundtrip (__main__.TestProjection.test_unproject_roundtrip) ... ok
+test_exceeds_boundary (__main__.TestTimeSkew.test_exceeds_boundary) ... ok
+test_nanosec_rollover (__main__.TestTimeSkew.test_nanosec_rollover) ... ok
+test_negative_direction (__main__.TestTimeSkew.test_negative_direction) ... ok
+test_within_boundary (__main__.TestTimeSkew.test_within_boundary) ... ok
+test_zero_stamp_rejected (__main__.TestTimeSkew.test_zero_stamp_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.083s
+
+OK
