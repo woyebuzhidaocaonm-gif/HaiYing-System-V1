@@ -1,5 +1,23 @@
 # 视觉组代码 (Vision Module)
 
+## V9.2视觉运行资产
+
+YOLOv5源码和训练权重不提交到本仓库。运行前设置：
+
+    export YOLOV5_ROOT=/absolute/path/to/yolov5
+    export HAIYING_YOLO_WEIGHTS=/absolute/path/to/best.pt
+    export HAIYING_YOLO_DEVICE=cpu
+    export PYTHONPATH="$YOLOV5_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+
+当前验收基线：
+
+- YOLOv5 commit：`915bbf294bb74c859f0b41f1c23bc395014ea679`
+- `best.pt` SHA256：`68717b5dc6cc2bf2b53eb53f63d79b18d1731170fa74bdb3ba6ce197ad5d77d8`
+- 输入尺寸：`640×640`
+- 类别顺序：`craze, corrosion, surface_injure, thunderstrike, crack, hide_craze`
+- ROS 2 Humble CPU验证：PyTorch `2.0.1+cpu`、torchvision `0.15.2+cpu`
+
+
 海鹰智巡 — 视觉感知模块 V2
 
 ## 文件说明

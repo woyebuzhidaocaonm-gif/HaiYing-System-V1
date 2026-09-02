@@ -22,6 +22,8 @@ from launch.substitutions import LaunchConfiguration
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PARAMS_FILE = str(SCRIPT_DIR.parent / 'params' / 'v9_2_vision.yaml')
+DEFAULT_MODEL_PATH = os.environ.get('HAIYING_YOLO_WEIGHTS', '')
+DEFAULT_DEVICE = os.environ.get('HAIYING_YOLO_DEVICE', 'cpu')
 
 
 def generate_launch_description():
@@ -36,13 +38,13 @@ def generate_launch_description():
         cmd=[
             'python3', str(SCRIPT_DIR.parent / 'yolo_detector.py'),
             '--ros-args',
-            '-p', f'image_topic:=/drone/camera/image_raw',
-            '-p', f'model_path:={model_path}',
-            '-p', f'device:={device}',
-            '-p', f'conf_threshold:={conf_threshold}',
-            '-p', f'iou_threshold:={iou_threshold}',
-            '-p', f'img_size:={img_size}',
-            '-p', f'publish_annotated:={publish_annotated}',
+            '-p', 'image_topic:=/drone/camera/image_raw',
+            '-p', ['model_path:=', model_path],
+            '-p', ['device:=', device],
+            '-p', ['conf_threshold:=', conf_threshold],
+            '-p', ['iou_threshold:=', iou_threshold],
+            '-p', ['img_size:=', img_size],
+            '-p', ['publish_annotated:=', publish_annotated],
             '-p', 'camera_frame:=ar0234_camera_optical_frame',
         ],
         output='screen',
@@ -62,9 +64,13 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'model_path',
-            default_value='/home/developer/yolov5/runs/train/wt_blade4/weights/best.pt',
-            description='YOLOv5 权重路径'),
-        DeclareLaunchArgument('device', default_value='cuda'),
+            default_value=DEFAULT_MODEL_PATH,
+            description=(
+                'YOLOv5权重路径；可通过HAIYING_YOLO_WEIGHTS设置')),
+        DeclareLaunchArgument(
+            'device',
+            default_value=DEFAULT_DEVICE,
+            description='推理设备，默认cpu'),
         DeclareLaunchArgument('conf_threshold', default_value='0.25'),
         DeclareLaunchArgument('iou_threshold', default_value='0.45'),
         DeclareLaunchArgument('img_size', default_value='[640, 640]'),
