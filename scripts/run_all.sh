@@ -30,6 +30,41 @@ if [ ! -f "$PX4_BUILD_DIR/bin/px4" ]; then
     exit 1
 fi
 
+YOLOV5_ROOT="${YOLOV5_ROOT:-}"
+HAIYING_YOLO_WEIGHTS="${HAIYING_YOLO_WEIGHTS:-}"
+HAIYING_YOLO_DEVICE="${HAIYING_YOLO_DEVICE:-cpu}"
+
+if [ ! -d "$YOLOV5_ROOT" ]; then
+    echo "[run_all] 错误: 请设置YOLOV5_ROOT为YOLOv5源码目录"
+    exit 1
+fi
+
+if [ ! -f "$HAIYING_YOLO_WEIGHTS" ]; then
+    echo "[run_all] 错误: 请设置HAIYING_YOLO_WEIGHTS为best.pt路径"
+    exit 1
+fi
+
+export YOLOV5_ROOT
+export HAIYING_YOLO_WEIGHTS
+export HAIYING_YOLO_DEVICE
+export PYTHONPATH="$YOLOV5_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+
+cleanup()
+{
+    for pid_file in /tmp/run_all_px4.pid /tmp/run_all_gazebo.pid
+    do
+        if [ -s "$pid_file" ]; then
+            pid=$(cat "$pid_file")
+
+            if kill -0 "$pid" 2>/dev/null; then
+                kill -INT "$pid" 2>/dev/null || true
+            fi
+        fi
+    done
+}
+
+trap cleanup EXIT INT TERM
+
 # --- 1. PX4 SITL（后台） ---
 echo "[run_all] 1/3 启动 PX4 SITL..."
 (
@@ -47,7 +82,6 @@ echo $! > /tmp/run_all_gazebo.pid
 # --- 3. 视觉链 ---
 echo "[run_all] 3/3 启动视觉链（yolo_detector + target_localizer）..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ros2 launch "$SCRIPT_DIR/launch/v9_2_vision.launch.py"
-
-# ros2 launch 退出后收尾
-trap 'kill $(cat /tmp/run_all_px4.pid 2>/dev/null) $(cat /tmp/run_all_gazebo.pid 2>/dev/null) 2>/dev/null || true' EXIT
+ros2 launch "$SCRIPT_DIR/launch/v9_2_vision.launch.py" \
+    model_path:="$HAIYING_YOLO_WEIGHTS" \
+    device:="$HAIYING_YOLO_DEVICE"

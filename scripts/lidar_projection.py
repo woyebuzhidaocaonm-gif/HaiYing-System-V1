@@ -160,6 +160,78 @@ def query_lidar_depth(points_optical, u, v, K, radius=15.0):
     return float(np.min(robust)) if len(robust) else median_z
 
 
+
+def query_lidar_depth_in_bbox(
+        points_optical, bbox_x_min, bbox_y_min,
+        bbox_x_max, bbox_y_max, K, margin=15.0):
+    """在bbox及其margin内筛选点云，返回稳健的最近深度。"""
+    points_optical = np.asarray(points_optical, dtype=np.float64)
+    K = np.asarray(K, dtype=np.float64).reshape(3, 3)
+
+    if len(points_optical) == 0:
+        return None
+
+    limits = np.asarray([
+        bbox_x_min, bbox_y_min,
+        bbox_x_max, bbox_y_max,
+        margin,
+    ], dtype=np.float64)
+
+    if not np.all(np.isfinite(limits)) or margin < 0.0:
+        return None
+
+    x_min = min(float(bbox_x_min), float(bbox_x_max)) - float(margin)
+    x_max = max(float(bbox_x_min), float(bbox_x_max)) + float(margin)
+    y_min = min(float(bbox_y_min), float(bbox_y_max)) - float(margin)
+    y_max = max(float(bbox_y_min), float(bbox_y_max)) + float(margin)
+
+    depths = points_optical[:, 2]
+    finite = np.all(np.isfinite(points_optical), axis=1)
+    front = finite & (depths > 0.1)
+
+    if not np.any(front):
+        return None
+
+    points_front = points_optical[front]
+    pixels = project_optical_to_pixel(points_front, K)
+
+    in_bbox = (
+        np.isfinite(pixels[:, 0])
+        & np.isfinite(pixels[:, 1])
+        & (pixels[:, 0] >= x_min)
+        & (pixels[:, 0] <= x_max)
+        & (pixels[:, 1] >= y_min)
+        & (pixels[:, 1] <= y_max)
+    )
+
+    if not np.any(in_bbox):
+        return None
+
+    selected_depths = points_front[in_bbox, 2]
+
+    # 少线雷达点数不足时，使用最近有效点回退。
+    if len(selected_depths) < 4:
+        return float(np.min(selected_depths))
+
+    # 点数足够时使用1.5×IQR剔除深度离群值。
+    q1, q3 = np.percentile(selected_depths, [25.0, 75.0])
+    iqr = float(q3 - q1)
+
+    if iqr > 0.0:
+        lower = q1 - 1.5 * iqr
+        upper = q3 + 1.5 * iqr
+        robust = selected_depths[
+            (selected_depths >= lower)
+            & (selected_depths <= upper)
+        ]
+    else:
+        robust = selected_depths
+
+    if len(robust) == 0:
+        robust = selected_depths
+
+    return float(np.min(robust))
+
 def stamps_within_skew(stamp_a, stamp_b, max_skew):
     """图像-点云时间差检查（PM 冻结：超过 0.5s 拒绝本次定位）。
 

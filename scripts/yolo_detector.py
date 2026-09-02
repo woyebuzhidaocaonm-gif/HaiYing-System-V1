@@ -28,9 +28,9 @@ from cv_bridge import CvBridge
 import cv2
 import numpy as np
 
-# YOLOv5路径
-YOLOV5_ROOT = '/home/developer/yolov5'
-if os.path.isdir(YOLOV5_ROOT):
+# YOLOv5源码作为仓库外运行资产，通过环境变量或PYTHONPATH提供。
+YOLOV5_ROOT = os.environ.get('YOLOV5_ROOT', '')
+if YOLOV5_ROOT and os.path.isdir(YOLOV5_ROOT):
     sys.path.insert(0, YOLOV5_ROOT)
 
 import torch
@@ -62,12 +62,15 @@ class YoloDetector(Node):
         super().__init__('yolo_detector')
 
         # 参数
-        self.declare_parameter('model_path',
-                               '/home/developer/yolov5/runs/train/wt_blade4/weights/best.pt')
+        self.declare_parameter(
+            'model_path',
+            os.environ.get('HAIYING_YOLO_WEIGHTS', ''))
         self.declare_parameter('conf_threshold', 0.25)
         self.declare_parameter('iou_threshold', 0.45)
         self.declare_parameter('img_size', [640, 640])
-        self.declare_parameter('device', 'cuda')
+        self.declare_parameter(
+            'device',
+            os.environ.get('HAIYING_YOLO_DEVICE', 'cpu'))
         self.declare_parameter('image_topic', '/drone/camera/image_raw')
         self.declare_parameter('publish_annotated', False)
         # V9.2 相机帧（检测消息 header.frame_id 与目标点链一致）
@@ -237,7 +240,8 @@ def main():
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

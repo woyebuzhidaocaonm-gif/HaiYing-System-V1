@@ -32,7 +32,8 @@
   lidar_frame:       'mid360_link'
   max_time_diff:     图像-点云最大时间差 (默认 0.5s)
   publish_lidar_tf:  是否发布相机-雷达外参TF (默认False；V9.2 禁发)
-  projection_radius: 点云投影筛选半径 (像素, 默认 15)
+  projection_radius: 旧中心半径接口（兼容保留）
+  bbox_margin:       bbox四边扩展像素数（默认15）
   tf_timeout:        TF查询超时 (默认 0.2s)
 """
 import rclpy
@@ -52,6 +53,7 @@ from lidar_projection import (
     pc2_to_xyz,
     project_optical_to_pixel,
     query_lidar_depth,
+    query_lidar_depth_in_bbox,
     stamps_within_skew,
 )
 
@@ -77,13 +79,16 @@ class TargetLocalizer(Node):
         self.declare_parameter('lidar_frame', 'mid360_link')
         self.declare_parameter('max_time_diff', 0.5)
         self.declare_parameter('publish_lidar_tf', False)
+        # projection_radius仅保留旧接口兼容。
         self.declare_parameter('projection_radius', 15.0)
+        self.declare_parameter('bbox_margin', 15.0)
         self.declare_parameter('tf_timeout', 0.2)
 
         use_depth = self.get_parameter('use_depth_camera').value
         use_lidar = self.get_parameter('use_lidar').value
         self.max_time_diff = self.get_parameter('max_time_diff').value
         self.projection_radius = self.get_parameter('projection_radius').value
+        self.bbox_margin = self.get_parameter('bbox_margin').value
 
         # --- TF ---
         self.tf_buffer = Buffer()
@@ -242,10 +247,16 @@ class TargetLocalizer(Node):
             cx = (det.bbox_x_min + det.bbox_x_max) / 2.0
             cy = (det.bbox_y_min + det.bbox_y_max) / 2.0
 
-            # 点云投影 + 框中心邻域稳健深度
-            depth = query_lidar_depth(
-                points_optical, cx, cy,
-                self.camera_intrinsics, self.projection_radius)
+            # 从完整bbox±margin筛选点云深度；中心用于最终目标射线。
+            depth = query_lidar_depth_in_bbox(
+                points_optical,
+                det.bbox_x_min,
+                det.bbox_y_min,
+                det.bbox_x_max,
+                det.bbox_y_max,
+                self.camera_intrinsics,
+                self.bbox_margin,
+            )
             if depth is None or not np.isfinite(depth) or depth <= 0:
                 continue
 
@@ -319,7 +330,8 @@ def main():
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

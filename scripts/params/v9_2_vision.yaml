@@ -24,4 +24,5 @@
     publish_lidar_tf: false
 
     projection_radius: 15.0
+    bbox_margin: 15.0
     tf_timeout: 0.2
