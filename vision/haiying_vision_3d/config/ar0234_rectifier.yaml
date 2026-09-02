@@ -1,0 +1,11 @@
+fisheye_rectifier_node:
+  ros__parameters:
+    input_image_topic: /camera/image_raw
+    output_image_topic: /camera/image_rect
+    output_camera_info_topic: /camera/camera_info_rect
+    calibration_file: ""
+    output_width: 1920
+    output_height: 1080
+    rectified_focal_length: 700.0
+    frame_id: ar0234_optical_frame
+    drop_out_of_order_frames: true

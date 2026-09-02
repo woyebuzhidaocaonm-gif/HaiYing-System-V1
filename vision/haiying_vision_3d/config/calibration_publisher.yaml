@@ -1,0 +1,11 @@
+camera_lidar_calibration:
+  ros__parameters:
+    calib_file: ""
+    simulation_mode: false
+    max_reprojection_error_px: 3.0
+    base_frame: base_link
+    camera_frame: ar0234_optical_frame
+    lidar_frame: livox_frame
+    # base_tree 发布 base→camera 与 base→lidar，TF 会自动推导 camera→lidar。
+    # direct_extrinsic 只发布 camera→lidar，适用于 base 变换已由其他节点管理的系统。
+    tree_mode: base_tree

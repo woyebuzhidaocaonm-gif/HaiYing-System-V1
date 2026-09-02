@@ -1,0 +1,42 @@
+yolo_lidar_fusion_node:
+  ros__parameters:
+    # Use the ONNX exported from the same trained best.pt by default because it
+    # runs in Ubuntu with OpenCV and does not require a separate PyTorch install.
+    model_path: "/mnt/c/Users/Jokei/Desktop/挑战杯/yolov5/output/best.onnx"
+    image_topic: /camera/image_rect
+    camera_info_topic: /camera/camera_info_rect
+    lidar_topic: /livox/lidar
+
+    annotated_image_topic: /vision/yolo_lidar_image
+    target_point_topic: /vision/target_point
+    target_distance_topic: /vision/target_distance
+    target_point_count_topic: /vision/target_point_count
+    target_cloud_topic: /vision/target_cloud
+
+    input_size: 640
+    confidence_threshold: 0.25
+    iou_threshold: 0.45
+    target_class_id: -1
+    device: cpu
+    minimum_inference_interval_sec: 0.05
+    max_sensor_skew_sec: 0.12
+
+    min_depth_m: 0.2
+    max_depth_m: 30.0
+    minimum_points: 3
+    box_inner_margin_ratio: 0.08
+    box_fallback_expand_px: 8.0
+    mad_scale: 3.0
+    minimum_depth_gate_m: 0.12
+    point_radius_px: 2
+    snapshot_path: "/mnt/c/Users/Jokei/Desktop/挑战杯/calibration/ar0234_calibration_output/yolo_lidar_fusion.jpg"
+    class_names:
+      [craze, corrosion, surface_injure, thunderstrike, crack, hide_craze]
+
+    # Temporary ideal V9.2 transform. Replace it after real extrinsic calibration.
+    calibration_ready: true
+    lidar_to_camera:
+      [0.0, -1.0,  0.0,  0.0,
+       0.0,  0.0, -1.0, -0.20,
+       1.0,  0.0,  0.0, -0.15,
+       0.0,  0.0,  0.0,  1.0]

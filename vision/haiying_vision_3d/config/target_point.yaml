@@ -1,0 +1,32 @@
+target_point_node:
+  ros__parameters:
+    # depth: D435i aligned depth; lidar: calibrated MID-360 projection.
+    mode: lidar
+    target_pixel_topic: /vision/target_pixel
+    output_topic: /vision/target_point
+    camera_info_topic: /camera/camera_info_rect
+    depth_topic: /camera/aligned_depth_to_color/image_raw
+    lidar_topic: /livox/lidar
+
+    # Empty preserves the measurement frame. Set map/odom only when the
+    # corresponding TF chain is available.
+    target_frame: ""
+    max_measurement_age_sec: 0.5
+    max_sensor_skew_sec: 0.1
+    min_depth_m: 0.2
+    max_depth_m: 30.0
+    depth_scale: 0.001
+    depth_window_radius: 2
+    search_radius_px: 12.0
+
+    # Safety gate: do not set true until a real LiDAR-to-camera calibration has
+    # replaced this identity matrix. Matrix is row-major and maps LiDAR XYZ to
+    # the rectified camera optical frame.
+    calibration_ready: false
+    use_tf_extrinsic: true
+    camera_optical_frame: ar0234_optical_frame
+    lidar_to_camera:
+      [1.0, 0.0, 0.0, 0.0,
+       0.0, 1.0, 0.0, 0.0,
+       0.0, 0.0, 1.0, 0.0,
+       0.0, 0.0, 0.0, 1.0]

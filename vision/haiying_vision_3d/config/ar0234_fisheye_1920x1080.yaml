@@ -1,0 +1,27 @@
+image_width: 1920
+image_height: 1080
+camera_name: ar0234_fisheye
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [287.9494481646608, 0.0, 910.503342639537,
+         0.0, 286.2973155161771, 553.1902196188113,
+         0.0, 0.0, 1.0]
+distortion_model: equidistant
+distortion_coefficients:
+  rows: 1
+  cols: 4
+  data: [-0.009332015434370653, 0.030936945063811012,
+         -0.054751967324964054, 0.022166586838588822]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1.0, 0.0, 0.0,
+         0.0, 1.0, 0.0,
+         0.0, 0.0, 1.0]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [287.9494481646608, 0.0, 910.503342639537, 0.0,
+         0.0, 286.2973155161771, 553.1902196188113, 0.0,
+         0.0, 0.0, 1.0, 0.0]

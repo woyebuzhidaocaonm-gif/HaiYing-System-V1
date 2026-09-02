@@ -1,0 +1,12 @@
+yolo_target_pixel_node:
+  ros__parameters:
+    model_path: ""
+    image_topic: /camera/image_rect
+    output_topic: /vision/target_pixel
+    input_size: 640
+    confidence_threshold: 0.25
+    iou_threshold: 0.45
+    target_class_id: -1
+    minimum_inference_interval_sec: 0.0
+    class_names:
+      [craze, corrosion, surface_injure, thunderstrike, crack, hide_craze]

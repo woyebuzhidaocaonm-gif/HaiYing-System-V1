@@ -1,0 +1,32 @@
+target_point_node:
+  ros__parameters:
+    # TEMPORARY IDEAL EXTRINSIC FOR INTEGRATION ONLY.
+    # Source: HaiYing V9.2 simulation sensor TF. Replace after real calibration.
+    mode: lidar
+    target_pixel_topic: /vision/target_pixel
+    output_topic: /vision/target_point
+    camera_info_topic: /camera/camera_info_rect
+    lidar_topic: /livox/lidar
+
+    target_frame: ""
+    max_measurement_age_sec: 0.5
+    max_sensor_skew_sec: 0.1
+    min_depth_m: 0.2
+    max_depth_m: 30.0
+    search_radius_px: 12.0
+
+    calibration_ready: true
+    use_tf_extrinsic: false
+    camera_optical_frame: ar0234_optical_frame
+
+    # Row-major T_camera_optical_lidar. It maps MID-360 FLU coordinates
+    # (X forward, Y left, Z up) into camera optical RDF coordinates
+    # (X right, Y down, Z forward):
+    #   x_cam = -y_lidar
+    #   y_cam = -z_lidar - 0.20
+    #   z_cam =  x_lidar - 0.15
+    lidar_to_camera:
+      [0.0, -1.0,  0.0,  0.0,
+       0.0,  0.0, -1.0, -0.20,
+       1.0,  0.0,  0.0, -0.15,
+       0.0,  0.0,  0.0,  1.0]
