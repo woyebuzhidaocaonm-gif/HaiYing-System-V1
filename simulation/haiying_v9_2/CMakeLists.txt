@@ -15,6 +15,7 @@ install(
 install(
   PROGRAMS
     scripts/publish_v9_2_model.py
+    scripts/publish_world_base_tf.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
