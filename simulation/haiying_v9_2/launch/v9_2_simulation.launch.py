@@ -135,6 +135,20 @@ def generate_launch_description():
         output="screen",
     )
 
+    world_base_tf = Node(
+        package="haiying_v9_2",
+        executable="publish_world_base_tf.py",
+        name="v9_2_world_base_tf",
+        parameters=[
+            {"use_sim_time": use_sim_time},
+            {"link_name": "custom_quad_333_v9_2::base_footprint"},
+            {"world_frame": "world"},
+            {"child_frame": "base_footprint"},
+            {"link_states_topic": "/gazebo/link_states"},
+        ],
+        output="screen",
+    )
+
     controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -202,6 +216,7 @@ def generate_launch_description():
         AppendEnvironmentVariable("LD_LIBRARY_PATH", px4_plugin_dir),
         gazebo,
         robot_state_publisher,
+        world_base_tf,
         model_publisher,
         spawn_model,
         static_tf(
